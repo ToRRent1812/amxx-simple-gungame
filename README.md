@@ -28,5 +28,6 @@ __gg_respawn_time 2.0__ - Delay before respawn
 _______________________
 ## Instalattion
 Make sure You have __latest__ [ReHLDS with libraries](https://rehlds.dev/) and [AMXX 1.10](https://www.amxmodx.org/downloads.php) 
-Download simple_gungame.zip from [Releases](https://github.com/ToRRent1812/amxx-simple-gungame/releases) and put into server/cstrike/addons/amxmodx/
+Download zip file from [Releases](https://github.com/ToRRent1812/amxx-simple-gungame/releases) and put into server/cstrike/addons/amxmodx/  
+Put sound folder into server/cstrike/  
 Open server/cstrike/addons/amxmodx/configs/plugins.ini with text editor and at the end of the file, create a new line __simple_gungame.amxx__

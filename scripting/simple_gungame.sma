@@ -3,7 +3,7 @@
 #include <cstrike>
 
 #define PLUGIN_NAME    "Simple GunGame"
-#define PLUGIN_VERSION "0.7.2"
+#define PLUGIN_VERSION "0.7.3"
 #define PLUGIN_AUTHOR  "ToRRent"
 
 #define TASK_RESPAWN  500
@@ -287,21 +287,19 @@ public Task_ShowTutorial(id)
 
     if(get_pcvar_num(g_CvarKnifeSteal) > 0)
         formatex(menutext, 255, "%L^n^n%L^n%L^n%L^n%L^n^n%L",
-            "GG_TUT_TITLE",
-            "GG_TUT_KILL",
-            "GG_TUT_HEADSHOT",
-            "GG_TUT_STEAL",
-            "GG_TUT_HANDICAP",
-            get_pcvar_num(g_CvarDeathBonus),
-            "GG_TUT_CLOSE")
+            id, "GG_TUT_TITLE",
+            id, "GG_TUT_KILL",
+            id, "GG_TUT_HEADSHOT",
+            id, "GG_TUT_STEAL",
+            id, "GG_TUT_HANDICAP",
+            id, "GG_TUT_CLOSE")
     else
         formatex(menutext, 255, "%L^n^n%L^n%L^n%L^n^n%L",
-            "GG_TUT_TITLE",
-            "GG_TUT_KILL",
-            "GG_TUT_HEADSHOT",
-            "GG_TUT_HANDICAP",
-            get_pcvar_num(g_CvarDeathBonus),
-            "GG_TUT_CLOSE")
+            id, "GG_TUT_TITLE",
+            id, "GG_TUT_KILL",
+            id, "GG_TUT_HEADSHOT",
+            id, "GG_TUT_HANDICAP",
+            id, "GG_TUT_CLOSE")
 
     show_menu(id, MENU_KEY_0, menutext, 10, "gg_tutorial")
 }
@@ -365,12 +363,12 @@ public Task_ShowPlayerHUD()
     for(new i = 0; i < num; i++)
     {
         new id = players[i]
-        new color = clamp(100+g_level[id]*5, 100, 255)
+        new color = clamp(g_level[id]*10, 0, 255)
 
         WeaponDisplayName(g_weaponList[g_level[id]], wname, charsmax(wname))
 
         set_hudmessage(color, 200, 0, -1.0, 0.75, 0, 0.0, 1.1, 0.0, 0.1)
-        if(g_weaponList[g_level[id]] == CSW_KNIFE) ShowSyncHudMsg(id, g_syncPlayerHud, "%L", "GG_HUD_FINAL", GetPlayerRank(id))
+        if(g_weaponList[g_level[id]] == CSW_KNIFE) ShowSyncHudMsg(id, g_syncPlayerHud, "%L", id, "GG_HUD_FINAL", GetPlayerRank(id))
         else ShowSyncHudMsg(id, g_syncPlayerHud, "LVL %d/%d - %s  |  XP %d/%d  |  TOP %d", g_level[id]+1, g_weaponCount, wname, g_points[id], GetNeededPoints(id), GetPlayerRank(id), g_level[id]+1)
     }
 }
@@ -520,7 +518,7 @@ CheckLevelUp(id)
     client_cmd(id, "spk gungame/smb3_powerup.wav")
     new playername[32]
     get_user_name(id, playername, 31)
-    if(g_weaponList[g_level[id]] == CSW_KNIFE) client_print_color(0, print_team_default, "%L", "GG_FINAL_LEVEL", playername)
+    if(g_weaponList[g_level[id]] == CSW_KNIFE) client_print_color(0, print_team_default, "%L", LANG_PLAYER, "GG_FINAL_LEVEL", playername)
 
     CheckLeaderForVote()
 
@@ -540,7 +538,7 @@ CheckLevelUp(id)
             }
         }
 
-        client_print_color(0, print_team_default, "%L", "GG_MATCH_WON", name)
+        client_print_color(0, print_team_default, "%L", LANG_PLAYER, "GG_MATCH_WON", name)
 
         g_matchWon = true
         FinishTheMap()

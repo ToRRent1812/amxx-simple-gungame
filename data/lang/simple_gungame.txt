@@ -2,7 +2,7 @@
 GG_TUT_TITLE    = \yWelcome to Simple GunGame\w
 GG_TUT_KILL     = \y1 Kill\w = \r1 XP
 GG_TUT_HEADSHOT = \y1 Headshot\w = \r2 XP
-GG_TUT_STEAL    = \yKnife/Grenade Kill\w = \rSteal 1 XP
+GG_TUT_STEAL    = \yKnife Kill\w = \rSteal 1 XP
 GG_TUT_HANDICAP = \yStuck on weapon?\w = \r%d Deaths = 1 XP
 GG_TUT_CLOSE    = \r0. \wClose
 GG_FINAL_LEVEL  = ^4[GunGame]^1 ^3%s^1 is on the final level!
@@ -13,7 +13,7 @@ GG_HUD_FINAL    = FINAL KNIFE  |  1 KILL TO WIN  |  TOP %d
 GG_TUT_TITLE    = \yWitaj w Simple GunGame\w
 GG_TUT_KILL     = \y1 Frag\w = \r1 XP
 GG_TUT_HEADSHOT = \y1 Head\w = \r2 XP
-GG_TUT_STEAL    = \yZabojstwo nozem/granatem\w = \rKradziez 1 XP
+GG_TUT_STEAL    = \yZabojstwo nozem\w = \rKradziez 1 XP
 GG_TUT_HANDICAP = \yUtknales?\w = \r%d Zgonow = 1 XP
 GG_TUT_CLOSE    = \r0. \wZamknij okno
 GG_FINAL_LEVEL  = ^4[GunGame]^1 ^3%s^1 jest na ostatnim poziomie!
@@ -24,7 +24,7 @@ GG_HUD_FINAL    = OSTATNI POZIOM  |  1 FRAG BY WYGRAC  |  TOP %d
 GG_TUT_TITLE    = \yWillkommen bei Simple GunGame\w
 GG_TUT_KILL     = \y1 Kill\w = \r1 XP
 GG_TUT_HEADSHOT = \y1 Kopfschuss\w = \r2 XP
-GG_TUT_STEAL    = \yMesser/Granate Kill\w = \r1 XP stehlen
+GG_TUT_STEAL    = \yMesserKill\w = \r1 XP stehlen
 GG_TUT_HANDICAP = \yHandicap\w = \r%d Tode = 1 XP
 GG_TUT_CLOSE    = \r0. \wSchliessen
 GG_FINAL_LEVEL  = ^4[GunGame]^1 ^3%s^1 ist auf dem letzten Level!
@@ -35,7 +35,7 @@ GG_HUD_FINAL    = FINALES MESSER  |  1 KILL ZUM SIEG  |  TOP %d
 GG_TUT_TITLE    = \yBienvenue dans Simple GunGame\w
 GG_TUT_KILL     = \y1 Kill\w = \r1 XP
 GG_TUT_HEADSHOT = \y1 Headshot\w = \r2 XP
-GG_TUT_STEAL    = \yKill couteau/grenade\w = \rVoler 1 XP
+GG_TUT_STEAL    = \yKill couteau\w = \rVoler 1 XP
 GG_TUT_HANDICAP = \yHandicap\w = \r%d Morts = 1 XP
 GG_TUT_CLOSE    = \r0. \wFermer
 GG_FINAL_LEVEL  = ^4[GunGame]^1 ^3%s^1 est au niveau final !
@@ -46,7 +46,7 @@ GG_HUD_FINAL    = COUTEAU FINAL  |  1 KILL POUR GAGNER  |  TOP %d
 GG_TUT_TITLE    = \yДобро пожаловать в Simple GunGame\w
 GG_TUT_KILL     = \y1 Убийство\w = \r1 XP
 GG_TUT_HEADSHOT = \y1 Хедшот\w = \r2 XP
-GG_TUT_STEAL    = \yНож/граната\w = \rУкрасть 1 XP
+GG_TUT_STEAL    = \yНож\w = \rУкрасть 1 XP
 GG_TUT_HANDICAP = \yГандикап\w = \r%d Смертей = 1 XP
 GG_TUT_CLOSE    = \r0. \wЗакрыть
 GG_FINAL_LEVEL  = ^4[GunGame]^1 ^3%s^1 на финальном уровне!
@@ -57,7 +57,7 @@ GG_HUD_FINAL    = ФИНАЛЬНЫЙ НОЖ  |  1 УБИЙСТВО ДО ПОБЕ
 GG_TUT_TITLE    = \yЛаскаво просимо до Simple GunGame\w
 GG_TUT_KILL     = \y1 Вбивство\w = \r1 XP
 GG_TUT_HEADSHOT = \y1 Хедшот\w = \r2 XP
-GG_TUT_STEAL    = \yНiж/граната\w = \rВкрасти 1 XP
+GG_TUT_STEAL    = \yНiж\w = \rВкрасти 1 XP
 GG_TUT_HANDICAP = \yГандикап\w = \r%d Смертей = 1 XP
 GG_TUT_CLOSE    = \r0. \wЗакрити
 GG_FINAL_LEVEL  = ^4[GunGame]^1 ^3%s^1 на фiнальному рiвнi!
@@ -68,7 +68,7 @@ GG_HUD_FINAL    = ФIНАЛЬНИЙ НIЖ  |  1 ВБИВСТВО ДО ПЕРЕМ
 GG_TUT_TITLE    = \yBienvenido a Simple GunGame\w
 GG_TUT_KILL     = \y1 Kill\w = \r1 XP
 GG_TUT_HEADSHOT = \y1 Headshot\w = \r2 XP
-GG_TUT_STEAL    = \yKill con cuchillo/granada\w = \rRobar 1 XP
+GG_TUT_STEAL    = \yKill con cuchillo\w = \rRobar 1 XP
 GG_TUT_HANDICAP = \yHandicap\w = \r%d Muertes = 1 XP
 GG_TUT_CLOSE    = \r0. \wCerrar
 GG_FINAL_LEVEL  = ^4[GunGame]^1 ^3%s^1 esta en el nivel final!
@@ -79,7 +79,7 @@ GG_HUD_FINAL    = CUCHILLO FINAL  |  1 KILL PARA GANAR  |  TOP %d
 GG_TUT_TITLE    = \yUdvozlunk a Simple GunGame-ben\w
 GG_TUT_KILL     = \y1 Oles\w = \r1 XP
 GG_TUT_HEADSHOT = \y1 Fejloves\w = \r2 XP
-GG_TUT_STEAL    = \yKes/granат oles\w = \r1 XP lopas
+GG_TUT_STEAL    = \yKes\w = \r1 XP lopas
 GG_TUT_HANDICAP = \yHandicap\w = \r%d Halal = 1 XP
 GG_TUT_CLOSE    = \r0. \wBezaras
 GG_FINAL_LEVEL  = ^4[GunGame]^1 ^3%s^1 az utolso szinten van!
@@ -90,7 +90,7 @@ GG_HUD_FINAL    = UTOLSO SZINT  |  1 OLES A GYOZELEMHEZ  |  TOP %d
 GG_TUT_TITLE    = \y欢迎来到 Simple GunGame\w
 GG_TUT_KILL     = \y1 击杀\w = \r1 XP
 GG_TUT_HEADSHOT = \y1 爆头\w = \r2 XP
-GG_TUT_STEAL    = \y刀/手雷击杀\w = \r偷取 1 XP
+GG_TUT_STEAL    = \y刀击杀\w = \r偷取 1 XP
 GG_TUT_HANDICAP = \y补偿\w = \r%d 次死亡 = 1 XP
 GG_TUT_CLOSE    = \r0. \w关闭
 GG_FINAL_LEVEL  = ^4[GunGame]^1 ^3%s^1 到达最终关卡！

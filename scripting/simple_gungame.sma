@@ -268,11 +268,12 @@ public client_putinserver(id)
     g_points[id] = 0
     g_level[id]  = GetWorstPlayerLevel(id)
     g_deaths[id] = 0
+
+    set_task(5.0, "Task_ShowTutorial", id)
 }
 
 public PlayerTeamChosen(id)
 {
-    set_task(get_pcvar_float(g_CvarRespawnTime)+3.0, "Task_ShowTutorial", id)
     remove_task(id + TASK_RESPAWN)
     set_task(get_pcvar_float(g_CvarRespawnTime), "Task_Respawn", id + TASK_RESPAWN)
 }
@@ -302,7 +303,7 @@ public Task_ShowTutorial(id)
             get_pcvar_num(g_CvarDeathBonus),
             "GG_TUT_CLOSE")
 
-    show_menu(id, MENU_KEY_0, menutext, -1, "gg_tutorial")
+    show_menu(id, MENU_KEY_0, menutext, 10, "gg_tutorial")
 }
 
 public Menu_TutorialClose(id, key)

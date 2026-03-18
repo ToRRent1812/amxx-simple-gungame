@@ -3,7 +3,7 @@
 #include <cstrike>
 
 #define PLUGIN_NAME    "Simple GunGame"
-#define PLUGIN_VERSION "0.7.3"
+#define PLUGIN_VERSION "0.7.4"
 #define PLUGIN_AUTHOR  "ToRRent"
 
 #define TASK_RESPAWN  500
@@ -12,23 +12,20 @@
 // cheapest to most expensive
 new const g_PresetPriceAsc[] =
 {
-    CSW_GLOCK18, CSW_USP, CSW_P228, CSW_FIVESEVEN, CSW_ELITE, CSW_DEAGLE,
-    CSW_TMP, CSW_MAC10, CSW_MP5NAVY, CSW_UMP45, CSW_P90,
-    CSW_M3, CSW_XM1014,
-    CSW_GALIL, CSW_FAMAS, CSW_AK47, CSW_M4A1, CSW_AUG, CSW_SG552,
-    CSW_M249,
-    CSW_SCOUT, CSW_SG550, CSW_G3SG1, CSW_AWP,
+    CSW_GLOCK18, CSW_USP, CSW_P228, CSW_DEAGLE, CSW_FIVESEVEN, CSW_ELITE,
+    CSW_TMP, CSW_MAC10, CSW_MP5NAVY, CSW_UMP45, CSW_M3, CSW_GALIL,
+    CSW_FAMAS, CSW_P90, CSW_AK47, CSW_SCOUT, CSW_XM1014, CSW_M4A1,
+    CSW_SG552, CSW_AUG, CSW_SG550, CSW_AWP, CSW_G3SG1, CSW_M249,
     CSW_HEGRENADE, CSW_KNIFE
 }
 
 // most expensive to cheapest
 new const g_PresetPriceDesc[] =
 {
-    CSW_AWP, CSW_G3SG1, CSW_SG550, CSW_SCOUT, CSW_M249,
-    CSW_SG552, CSW_AUG, CSW_M4A1, CSW_AK47, CSW_FAMAS, CSW_GALIL,
-    CSW_XM1014, CSW_M3,
-    CSW_P90, CSW_UMP45, CSW_MP5NAVY, CSW_MAC10, CSW_TMP,
-    CSW_DEAGLE, CSW_ELITE, CSW_FIVESEVEN, CSW_P228, CSW_USP, CSW_GLOCK18,
+    CSW_M249, CSW_G3SG1, CSW_AWP, CSW_SG550, CSW_AUG, CSW_SG552,
+    CSW_M4A1, CSW_XM1014, CSW_SCOUT, CSW_AK47, CSW_P90, CSW_FAMAS,
+    CSW_GALIL, CSW_M3, CSW_UMP45, CSW_MP5NAVY, CSW_MAC10, CSW_TMP,
+    CSW_ELITE, CSW_FIVESEVEN, CSW_DEAGLE, CSW_P228, CSW_USP, CSW_GLOCK18,
     CSW_HEGRENADE, CSW_KNIFE
 }
 
@@ -61,6 +58,7 @@ new g_weaponCount
 new g_points[33]
 new g_level[33]
 new g_deaths[33]
+new bool:g_threwGrenade[33]
 
 new g_syncScoreboardHud
 new g_syncPlayerHud
@@ -84,10 +82,10 @@ new g_old_map_weapons
 new g_old_free_armor
 new g_old_round_infinite
 new g_old_timelimit
+new g_old_csr_scorecap
 
 native csr_custom_win();
-native csr_add_score(id, score);
-native csr_get_score(id);
+native csr_set_score(id, score);
 
 public plugin_init()
 {
@@ -187,6 +185,7 @@ public Task_ResetData()
             g_points[i] = 0
             g_level[i]  = 0
             g_deaths[i] = 0
+        g_threwGrenade[i] = false
     }
 }
 
@@ -201,6 +200,7 @@ SaveServerCvars()
     g_old_free_armor       = get_cvar_num("mp_free_armor")
     g_old_round_infinite   = get_cvar_num("mp_round_infinite")
     g_old_timelimit        = get_cvar_num("mp_timelimit")
+    if(LibraryExists("csr", LibType_Library)) g_old_csr_scorecap = get_cvar_num("rank_score_cap")
 }
 
 ApplyGunGameCvars()
@@ -214,7 +214,7 @@ ApplyGunGameCvars()
     set_cvar_num("mp_give_player_c4",              0)  // Disable bomb — disables bomb objective
     set_cvar_num("mp_weapons_allow_map_placed",    0)  // No picking up weapons from ground
     set_cvar_num("mp_free_armor",                  2)  // Full armor + helmet on every spawn
-
+    if(LibraryExists("csr", LibType_Library)) set_cvar_num("rank_score_cap", 0) // Remove score cap because gungame is 1 round only
 }
 
 RestoreServerCvars()
@@ -228,6 +228,7 @@ RestoreServerCvars()
     set_cvar_num("mp_give_player_c4",              g_old_give_c4)
     set_cvar_num("mp_weapons_allow_map_placed",    g_old_map_weapons)
     set_cvar_num("mp_free_armor",                  g_old_free_armor)
+    if(LibraryExists("csr", LibType_Library)) set_cvar_num("rank_score_cap", g_old_csr_scorecap)
 }
 
 BuildWeaponPreset(WeaponPreset:preset)
@@ -268,8 +269,9 @@ public client_putinserver(id)
     g_points[id] = 0
     g_level[id]  = GetWorstPlayerLevel(id)
     g_deaths[id] = 0
+    g_threwGrenade[id] = false
 
-    set_task(5.0, "Task_ShowTutorial", id)
+    set_task(1.0, "Task_ShowTutorial", id)
 }
 
 public PlayerTeamChosen(id)
@@ -421,7 +423,7 @@ public PlayerKilled_Post(victim, attacker)
     new weapon = get_user_weapon(attacker)
     new bool:headshot = bool:get_member(victim, m_bHeadshotKilled)
 
-    if(weapon == CSW_KNIFE)
+    if(weapon == CSW_KNIFE && !g_threwGrenade[attacker])
     {
         if(get_pcvar_num(g_CvarKnifeSteal) > 0)
         {
@@ -429,6 +431,11 @@ public PlayerKilled_Post(victim, attacker)
             CheckLevelDown(victim)
         }
 
+        g_points[attacker]++
+    }
+    else if(weapon == CSW_KNIFE && g_threwGrenade[attacker])
+    {
+        g_threwGrenade[attacker] = false
         g_points[attacker]++
     }
     else if(headshot)
@@ -456,6 +463,7 @@ public OnGrenadeThrown(id)
     if(g_weaponList[g_level[id]] != CSW_HEGRENADE)
         return
 
+    g_threwGrenade[id] = true
     remove_task(id + TASK_GRENADE)
     set_task(2.0, "Task_ReplenishGrenade", id + TASK_GRENADE)
 }
@@ -470,6 +478,7 @@ public Task_ReplenishGrenade(taskid)
     if(g_weaponList[g_level[id]] != CSW_HEGRENADE)
         return
 
+    g_threwGrenade[id] = false
     rg_give_item(id, "weapon_hegrenade", GT_APPEND)
 }
 
@@ -530,7 +539,7 @@ CheckLevelUp(id)
         for(new i = 1; i <= MaxClients; i++)
         {
             if(is_user_connected(i) && LibraryExists("csr", LibType_Library))
-                csr_add_score(i, g_level[i]*100)
+                csr_set_score(i, g_level[i])
             if(is_user_alive(i))
             {
                 rg_remove_all_items(i)
@@ -696,7 +705,6 @@ public Task_ShowTop()
         }
     }
 
-    // Build base lines (no highlight)
     new line[5][64]
     new wname[16]
     new pname[16]
@@ -715,7 +723,6 @@ public Task_ShowTop()
         }
     }
 
-    // Send per-player so we can prefix the viewer's own slot
     new text[386]
     new myline[5][64]
 

@@ -3,7 +3,7 @@
 #include <cstrike>
 
 #define PLUGIN_NAME    "Simple GunGame"
-#define PLUGIN_VERSION "0.7.1"
+#define PLUGIN_VERSION "0.7.2"
 #define PLUGIN_AUTHOR  "ToRRent"
 
 #define TASK_RESPAWN  500
@@ -68,6 +68,8 @@ new g_syncPlayerHud
 new g_CvarXpNeeded
 new g_CvarHightierXp
 new g_CvarKnifeSteal
+new g_CvarDeathBonus
+new g_CvarRespawnTime
 new g_CvarFF
 new WeaponPreset:g_currentPreset
 new bool:g_voteStarted
@@ -90,16 +92,21 @@ native csr_get_score(id);
 public plugin_init()
 {
     register_plugin(PLUGIN_NAME, PLUGIN_VERSION, PLUGIN_AUTHOR)
+    register_dictionary("simple_gungame.txt")
 
     SaveServerCvars()
 
     g_CvarXpNeeded    = register_cvar("gg_xp_needed",        "2")
     g_CvarHightierXp  = register_cvar("gg_hightier_xp_needed","5")
     g_CvarKnifeSteal  = register_cvar("gg_knife_steal",       "1")
+    g_CvarDeathBonus  = register_cvar("gg_death_bonus",       "5")
+    g_CvarRespawnTime = register_cvar("gg_respawn_time",     "2.0")
+
     g_CvarFF          = get_cvar_pointer("mp_friendlyfire")
 
     RegisterHookChain(RG_CBasePlayer_Spawn,  "PlayerSpawn_Post",  true)
     RegisterHookChain(RG_CBasePlayer_Killed, "PlayerKilled_Post", true)
+    RegisterHookChain(RG_HandleMenu_ChooseTeam, "PlayerTeamChosen", true)
     RegisterHookChain(RG_CBasePlayer_ThrowGrenade,       "OnGrenadeThrown", false)
     RegisterHookChain(RG_CBasePlayerWeapon_DefaultDeploy, "OnWeaponDeploy",  false)
     register_logevent("Server_Restart",2,"1&Restart_Round_","1=Game_Commencing")
@@ -147,6 +154,12 @@ public plugin_cfg()
         pause("a")
         return
     }
+
+    if(get_pcvar_num(g_CvarXpNeeded) < 1) set_pcvar_num(g_CvarXpNeeded, 1)
+    if(get_pcvar_num(g_CvarHightierXp) < 1) set_pcvar_num(g_CvarHightierXp, 1)
+    if(get_pcvar_num(g_CvarKnifeSteal) < 0) set_pcvar_num(g_CvarKnifeSteal, 0)
+    if(get_pcvar_num(g_CvarDeathBonus) < 0) set_pcvar_num(g_CvarDeathBonus, 0)
+    if(get_pcvar_float(g_CvarRespawnTime) < 0.0) set_pcvar_float(g_CvarRespawnTime, 1.0)
 
     g_currentPreset = WeaponPreset:random_num(0, 3)
     BuildWeaponPreset(g_currentPreset)
@@ -255,8 +268,13 @@ public client_putinserver(id)
     g_points[id] = 0
     g_level[id]  = GetWorstPlayerLevel(id)
     g_deaths[id] = 0
+}
 
-    set_task(3.0, "Task_ShowTutorial", id)
+public PlayerTeamChosen(id)
+{
+    set_task(get_pcvar_float(g_CvarRespawnTime)+3.0, "Task_ShowTutorial", id)
+    remove_task(id + TASK_RESPAWN)
+    set_task(get_pcvar_float(g_CvarRespawnTime), "Task_Respawn", id + TASK_RESPAWN)
 }
 
 public Task_ShowTutorial(id)
@@ -266,10 +284,23 @@ public Task_ShowTutorial(id)
 
     new menutext[256]
 
-    if(get_pcvar_num(g_CvarKnifeSteal))
-        formatex(menutext, 255, "\yWelcome to Simple GunGame\w^n^n\y1 Kill\w = \r1 XP^n\y1 Headshot\w = \r2 XP^n\yKnife Kill\w = \rSteal 1 XP^n\yHandicap\w = \r5 Deaths = 1 XP^n^n\r0. \wClose")
+    if(get_pcvar_num(g_CvarKnifeSteal) > 0)
+        formatex(menutext, 255, "%L^n^n%L^n%L^n%L^n%L^n^n%L",
+            "GG_TUT_TITLE",
+            "GG_TUT_KILL",
+            "GG_TUT_HEADSHOT",
+            "GG_TUT_STEAL",
+            "GG_TUT_HANDICAP",
+            get_pcvar_num(g_CvarDeathBonus),
+            "GG_TUT_CLOSE")
     else
-        formatex(menutext, 255, "\yWelcome to Simple GunGame\w^n^n\y1 Kill\w = \r1 XP^n\y1 Headshot\w = \r2 XP^n\yHandicap\w = \r5 Deaths = 1 XP^n^n\r0. \wClose")
+        formatex(menutext, 255, "%L^n^n%L^n%L^n%L^n^n%L",
+            "GG_TUT_TITLE",
+            "GG_TUT_KILL",
+            "GG_TUT_HEADSHOT",
+            "GG_TUT_HANDICAP",
+            get_pcvar_num(g_CvarDeathBonus),
+            "GG_TUT_CLOSE")
 
     show_menu(id, MENU_KEY_0, menutext, -1, "gg_tutorial")
 }
@@ -333,12 +364,13 @@ public Task_ShowPlayerHUD()
     for(new i = 0; i < num; i++)
     {
         new id = players[i]
+        new color = clamp(100+g_level[id]*5, 100, 255)
 
         WeaponDisplayName(g_weaponList[g_level[id]], wname, charsmax(wname))
 
-        set_hudmessage(255, 200, 0, -1.0, 0.75, 0, 0.0, 1.1, 0.0, 0.1)
-        if(g_weaponList[g_level[id]] == CSW_KNIFE) ShowSyncHudMsg(id, g_syncPlayerHud, "FINAL KNIFE  |  1 KILL TO WIN  |  TOP %d",  GetPlayerRank(id))
-        else ShowSyncHudMsg(id, g_syncPlayerHud, "LVL %d/%d  -  %s  |  XP %d/%d  |  TOP %d", g_level[id] + 1, g_weaponCount, wname, g_points[id], GetNeededPoints(id), GetPlayerRank(id))
+        set_hudmessage(color, 200, 0, -1.0, 0.75, 0, 0.0, 1.1, 0.0, 0.1)
+        if(g_weaponList[g_level[id]] == CSW_KNIFE) ShowSyncHudMsg(id, g_syncPlayerHud, "%L", "GG_HUD_FINAL", GetPlayerRank(id))
+        else ShowSyncHudMsg(id, g_syncPlayerHud, "LVL %d/%d - %s  |  XP %d/%d  |  TOP %d", g_level[id]+1, g_weaponCount, wname, g_points[id], GetNeededPoints(id), GetPlayerRank(id), g_level[id]+1)
     }
 }
 
@@ -367,7 +399,7 @@ public PlayerKilled_Post(victim, attacker)
     if(is_user_connected(victim))
     {
         remove_task(victim + TASK_RESPAWN)
-        set_task(2.0, "Task_Respawn", victim + TASK_RESPAWN)
+        set_task(get_pcvar_float(g_CvarRespawnTime), "Task_Respawn", victim + TASK_RESPAWN)
     }
 
     if(!is_user_connected(attacker))
@@ -392,7 +424,7 @@ public PlayerKilled_Post(victim, attacker)
 
     if(weapon == CSW_KNIFE)
     {
-        if(get_pcvar_num(g_CvarKnifeSteal))
+        if(get_pcvar_num(g_CvarKnifeSteal) > 0)
         {
             g_points[victim]--
             CheckLevelDown(victim)
@@ -410,7 +442,7 @@ public PlayerKilled_Post(victim, attacker)
 
     g_deaths[victim]++
 
-    if(g_deaths[victim] % 5 == 0 && g_weaponList[g_level[victim]] != CSW_KNIFE)
+    if(get_pcvar_num(g_CvarDeathBonus) > 0 && g_deaths[victim] % get_pcvar_num(g_CvarDeathBonus) == 0 && g_weaponList[g_level[victim]] != CSW_KNIFE)
     {
         g_points[victim]++
         CheckLevelUp(victim)
@@ -487,7 +519,7 @@ CheckLevelUp(id)
     client_cmd(id, "spk gungame/smb3_powerup.wav")
     new playername[32]
     get_user_name(id, playername, 31)
-    if(g_weaponList[g_level[id]] == CSW_KNIFE) client_print_color(0, print_team_default, "^4[GunGame]^1 ^3%s^1 is on final level!", playername)
+    if(g_weaponList[g_level[id]] == CSW_KNIFE) client_print_color(0, print_team_default, "%L", "GG_FINAL_LEVEL", playername)
 
     CheckLeaderForVote()
 
@@ -507,8 +539,7 @@ CheckLevelUp(id)
             }
         }
 
-        client_print_color(0, print_team_default,
-            "^4[GunGame]^1 ^3%s^1 won the match with the final knife kill!", name)
+        client_print_color(0, print_team_default, "%L", "GG_MATCH_WON", name)
 
         g_matchWon = true
         FinishTheMap()
@@ -681,7 +712,7 @@ public Task_ShowTop()
         {
             get_user_name(top[s], pname, 15)
             WeaponDisplayName(g_weaponList[g_level[top[s]]], wname, 15)
-            formatex(line[s], 63, "%d. %s - %s - LVL %d", s + 1, pname, wname, g_level[top[s]] + 1)
+            formatex(line[s], 63, "%d. %s - %s (-%d-)", s + 1, pname, wname, g_level[top[s]] + 1)
         }
     }
 

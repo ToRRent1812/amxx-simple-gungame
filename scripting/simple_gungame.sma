@@ -3,7 +3,7 @@
 #include <cstrike>
 
 #define PLUGIN_NAME    "Simple GunGame"
-#define PLUGIN_VERSION "0.7.4"
+#define PLUGIN_VERSION "0.7.5"
 #define PLUGIN_AUTHOR  "ToRRent"
 
 #define TASK_RESPAWN  500
@@ -270,12 +270,11 @@ public client_putinserver(id)
     g_level[id]  = GetWorstPlayerLevel(id)
     g_deaths[id] = 0
     g_threwGrenade[id] = false
-
-    set_task(1.0, "Task_ShowTutorial", id)
 }
 
 public PlayerTeamChosen(id)
 {
+    set_task(get_pcvar_float(g_CvarRespawnTime)+1.5, "Task_ShowTutorial", id)
     remove_task(id + TASK_RESPAWN)
     set_task(get_pcvar_float(g_CvarRespawnTime), "Task_Respawn", id + TASK_RESPAWN)
 }
@@ -538,8 +537,7 @@ CheckLevelUp(id)
 
         for(new i = 1; i <= MaxClients; i++)
         {
-            if(is_user_connected(i) && LibraryExists("csr", LibType_Library))
-                csr_set_score(i, g_level[i])
+            if(is_user_connected(i) && LibraryExists("csr", LibType_Library)) csr_set_score(i, g_level[i]*10)
             if(is_user_alive(i))
             {
                 rg_remove_all_items(i)
@@ -750,8 +748,13 @@ public FinishTheMap()
 {
     if(LibraryExists("csr", LibType_Library)) csr_custom_win()
     ResetAllPlayers()
-    set_cvar_float("mp_timelimit", 0.01)
+    set_task(3.0, "Task_StopTheMatch")
     set_task(10.0, "Task_RestoreCvars")
+}
+
+public Task_StopTheMatch()
+{
+    set_cvar_float("mp_timelimit", 0.01)
 }
 
 public Task_RestoreCvars()

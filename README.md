@@ -8,7 +8,7 @@ There are 4 different weapon lists that are randomised per map: price based, rev
 Progression is xp based:  
 1 kill = 1 XP  
 1 Headshot = 2 XP  
-Knife/HE kill = Steal 1 XP  
+Knife kill = Steal 1 XP  
 Stuck on a gun? Die 5 times = 1 XP  
   
 There is a realtime top5 leaderboard below radar, below crosshair You can see your progress.  

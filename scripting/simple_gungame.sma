@@ -3,7 +3,7 @@
 #include <cstrike>
 
 #define PLUGIN_NAME    "Simple GunGame"
-#define PLUGIN_VERSION "0.7.7"
+#define PLUGIN_VERSION "1.0.0"
 #define PLUGIN_AUTHOR  "ToRRent"
 
 #define TASK_RESPAWN  500
@@ -83,6 +83,7 @@ new g_old_free_armor
 new g_old_round_infinite
 new g_old_timelimit
 new g_old_csr_scorecap
+new g_old_infammo
 
 native csr_custom_win();
 native csr_set_score(id, score);
@@ -126,6 +127,7 @@ public plugin_precache()
     precache_sound("gungame/smb3_powerup.wav")
     precache_sound("gungame/smb3_powerdown.wav")
 
+    // Custom knife model. Replace files if using different
     precache_model("models/v_cobraknife.mdl")
     precache_sound("weapons/deltaforce/cobraknife/knife_deploy.wav")
     precache_sound("weapons/deltaforce/cobraknife/knife_swing_01.wav")
@@ -200,6 +202,7 @@ SaveServerCvars()
     g_old_free_armor       = get_cvar_num("mp_free_armor")
     g_old_round_infinite   = get_cvar_num("mp_round_infinite")
     g_old_timelimit        = get_cvar_num("mp_timelimit")
+    g_old_infammo          = get_cvar_num("mp_infinite_ammo")
     if(LibraryExists("csr", LibType_Library)) g_old_csr_scorecap = get_cvar_num("rank_score_cap")
 }
 
@@ -214,7 +217,8 @@ ApplyGunGameCvars()
     set_cvar_num("mp_give_player_c4",              0)  // Disable bomb — disables bomb objective
     set_cvar_num("mp_weapons_allow_map_placed",    0)  // No picking up weapons from ground
     set_cvar_num("mp_free_armor",                  2)  // Full armor + helmet on every spawn
-    if(LibraryExists("csr", LibType_Library)) set_cvar_num("rank_score_cap", 0) // Remove score cap because gungame is 1 round only
+    set_cvar_num("mp_infinite_ammo"                2)  // Infinite amount of magazines
+    if(LibraryExists("csr", LibType_Library)) set_cvar_num("rank_score_cap", 1) // We set match scores by player level
 }
 
 RestoreServerCvars()
@@ -228,6 +232,7 @@ RestoreServerCvars()
     set_cvar_num("mp_give_player_c4",              g_old_give_c4)
     set_cvar_num("mp_weapons_allow_map_placed",    g_old_map_weapons)
     set_cvar_num("mp_free_armor",                  g_old_free_armor)
+    set_cvar_num("mp_infinite_ammo"                g_old_infammo)
     if(LibraryExists("csr", LibType_Library)) set_cvar_num("rank_score_cap", g_old_csr_scorecap)
 }
 
@@ -329,7 +334,7 @@ GetWorstPlayerLevel(exclude)
 
 public PlayerSpawn_Post(id)
 {
-    if(!is_user_alive(id))
+    if(!is_user_connected(id) || !is_user_alive(id))
         return
 
     GiveLevelWeapon(id)
@@ -337,6 +342,9 @@ public PlayerSpawn_Post(id)
 
 GiveLevelWeapon(id)
 {
+    if(g_level[id] >= g_weaponCount)
+        return
+
     rg_remove_all_items(id)
 
     new weapon = g_weaponList[g_level[id]]
@@ -358,22 +366,20 @@ GiveLevelWeapon(id)
 public Task_ShowPlayerHUD()
 {
     new players[32], num
-    get_players(players, num, "a")
+    get_players(players, num, "ach")
 
     new wname[16]
 
     for(new i = 0; i < num; i++)
     {
         new id = players[i]
-        if(!is_user_alive(id) || is_user_bot(id))
-            continue
 
         new lvl = clamp(g_level[id], 0, g_weaponCount)
         new color = clamp(lvl*10, 0, 255)
 
         WeaponDisplayName(g_weaponList[lvl], wname, charsmax(wname))
 
-        set_hudmessage(color, 200, 0, -1.0, 0.75, 0, 0.0, 1.1, 0.0, 0.1)
+        set_hudmessage(color, 150, 0, -1.0, 0.75, 0, 0.0, 1.1, 0.0, 0.1)
         if(g_weaponList[lvl] == CSW_KNIFE) ShowSyncHudMsg(id, g_syncPlayerHud, "%L", id, "GG_HUD_FINAL", GetPlayerRank(id))
         else ShowSyncHudMsg(id, g_syncPlayerHud, "LVL %d/%d - %s  |  XP %d/%d  |  TOP %d", lvl+1, g_weaponCount, wname, g_points[id], GetNeededPoints(id), GetPlayerRank(id), lvl+1)
     }
@@ -446,6 +452,9 @@ public PlayerKilled_Post(victim, attacker)
         g_points[attacker] += 2
     else
         g_points[attacker]++
+
+    if(weapon != CSW_KNIFE && weapon != CSW_HEGRENADE)
+        RefillMagazine(attacker)
 
     client_cmd(attacker, "spk buttons/bell1.wav")
     CheckLevelUp(attacker)
@@ -542,7 +551,7 @@ CheckLevelUp(id)
 
         for(new i = 1; i <= MaxClients; i++)
         {
-            if(is_user_connected(i) && LibraryExists("csr", LibType_Library)) csr_set_score(i, g_level[i]*10)
+            if(is_user_connected(i) && LibraryExists("csr", LibType_Library)) csr_set_score(i, g_level[i])
             if(is_user_alive(i))
             {
                 rg_remove_all_items(i)
@@ -745,7 +754,7 @@ public Task_ShowTop()
             myline[0], myline[1], myline[2], myline[3], myline[4])
 
         set_hudmessage(255, 200, 0, 0.01, 0.18, 0, 0.0, 1.1, 0.0, 0.1, -1)
-        ShowSyncHudMsg(viewer, g_syncScoreboardHud, text)
+        if(is_user_alive(viewer) && !is_user_bot(viewer)) ShowSyncHudMsg(viewer, g_syncScoreboardHud, text)
     }
 }
 
@@ -780,9 +789,27 @@ public OnWeaponDeploy(weaponEnt)
     if(g_weaponList[g_level[id]] != CSW_KNIFE)
         return HC_CONTINUE
 
+    // Custom knife model. Replace file name if using different
     SetHookChainArg(2, ATYPE_STRING, "models/v_cobraknife.mdl")
 
     return HC_CONTINUE
+}
+
+RefillMagazine(id)
+{
+    new weaponEnt = get_member(id, m_pActiveItem)
+    if(is_nullent(weaponEnt)) return
+
+    if(rg_get_iteminfo(weaponEnt, ItemInfo_iMaxClip) == -1) return
+
+    RequestFrame("RefillMagazineFrame", weaponEnt)
+}
+
+public RefillMagazineFrame(weaponEnt)
+{
+    if(is_nullent(weaponEnt)) return
+
+    set_member(weaponEnt, m_Weapon_iClip, rg_get_iteminfo(weaponEnt, ItemInfo_iMaxClip))
 }
 
 WeaponDisplayName(csw, name[], len)

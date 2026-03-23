@@ -3,7 +3,7 @@
 #include <cstrike>
 
 #define PLUGIN_NAME    "Simple GunGame"
-#define PLUGIN_VERSION "0.7.5"
+#define PLUGIN_VERSION "0.7.7"
 #define PLUGIN_AUTHOR  "ToRRent"
 
 #define TASK_RESPAWN  500
@@ -182,9 +182,9 @@ public Task_ResetData()
         if(!is_user_connected(i))
             continue
 
-            g_points[i] = 0
-            g_level[i]  = 0
-            g_deaths[i] = 0
+        g_points[i] = 0
+        g_level[i]  = 0
+        g_deaths[i] = 0
         g_threwGrenade[i] = false
     }
 }
@@ -286,21 +286,22 @@ public Task_ShowTutorial(id)
 
     new menutext[256]
 
+    // Resolve each line separately — formatex does not support %L
+    new l_title[64], l_kill[64], l_head[64], l_steal[64], l_handicap[64], l_close[32]
+
+    format(l_title,    63, "%L", id, "GG_TUT_TITLE")
+    format(l_kill,     63, "%L", id, "GG_TUT_KILL")
+    format(l_head,     63, "%L", id, "GG_TUT_HEADSHOT")
+    format(l_steal,    63, "%L", id, "GG_TUT_STEAL")
+    format(l_handicap, 63, "%L", id, "GG_TUT_HANDICAP", get_pcvar_num(g_CvarDeathBonus))
+    format(l_close,    31, "%L", id, "GG_TUT_CLOSE")
+
     if(get_pcvar_num(g_CvarKnifeSteal) > 0)
-        formatex(menutext, 255, "%L^n^n%L^n%L^n%L^n%L^n^n%L",
-            id, "GG_TUT_TITLE",
-            id, "GG_TUT_KILL",
-            id, "GG_TUT_HEADSHOT",
-            id, "GG_TUT_STEAL",
-            id, "GG_TUT_HANDICAP",
-            id, "GG_TUT_CLOSE")
+        formatex(menutext, 255, "%s^n^n%s^n%s^n%s^n%s^n^n%s",
+            l_title, l_kill, l_head, l_steal, l_handicap, l_close)
     else
-        formatex(menutext, 255, "%L^n^n%L^n%L^n%L^n^n%L",
-            id, "GG_TUT_TITLE",
-            id, "GG_TUT_KILL",
-            id, "GG_TUT_HEADSHOT",
-            id, "GG_TUT_HANDICAP",
-            id, "GG_TUT_CLOSE")
+        formatex(menutext, 255, "%s^n^n%s^n%s^n%s^n^n%s",
+            l_title, l_kill, l_head, l_handicap, l_close)
 
     show_menu(id, MENU_KEY_0, menutext, 10, "gg_tutorial")
 }
@@ -364,13 +365,17 @@ public Task_ShowPlayerHUD()
     for(new i = 0; i < num; i++)
     {
         new id = players[i]
-        new color = clamp(g_level[id]*10, 0, 255)
+        if(!is_user_alive(id) || is_user_bot(id))
+            continue
 
-        WeaponDisplayName(g_weaponList[g_level[id]], wname, charsmax(wname))
+        new lvl = clamp(g_level[id], 0, g_weaponCount)
+        new color = clamp(lvl*10, 0, 255)
+
+        WeaponDisplayName(g_weaponList[lvl], wname, charsmax(wname))
 
         set_hudmessage(color, 200, 0, -1.0, 0.75, 0, 0.0, 1.1, 0.0, 0.1)
-        if(g_weaponList[g_level[id]] == CSW_KNIFE) ShowSyncHudMsg(id, g_syncPlayerHud, "%L", id, "GG_HUD_FINAL", GetPlayerRank(id))
-        else ShowSyncHudMsg(id, g_syncPlayerHud, "LVL %d/%d - %s  |  XP %d/%d  |  TOP %d", g_level[id]+1, g_weaponCount, wname, g_points[id], GetNeededPoints(id), GetPlayerRank(id), g_level[id]+1)
+        if(g_weaponList[lvl] == CSW_KNIFE) ShowSyncHudMsg(id, g_syncPlayerHud, "%L", id, "GG_HUD_FINAL", GetPlayerRank(id))
+        else ShowSyncHudMsg(id, g_syncPlayerHud, "LVL %d/%d - %s  |  XP %d/%d  |  TOP %d", lvl+1, g_weaponCount, wname, g_points[id], GetNeededPoints(id), GetPlayerRank(id), lvl+1)
     }
 }
 
@@ -447,7 +452,7 @@ public PlayerKilled_Post(victim, attacker)
 
     g_deaths[victim]++
 
-    if(get_pcvar_num(g_CvarDeathBonus) > 0 && g_deaths[victim] % get_pcvar_num(g_CvarDeathBonus) == 0 && g_weaponList[g_level[victim]] != CSW_KNIFE)
+    if(get_pcvar_num(g_CvarDeathBonus) > 0 && g_deaths[victim] % get_pcvar_num(g_CvarDeathBonus) == 0 && g_weaponList[g_level[victim]] != CSW_KNIFE && g_weaponList[g_level[victim]] != CSW_HEGRENADE)
     {
         g_points[victim]++
         CheckLevelUp(victim)
@@ -717,7 +722,7 @@ public Task_ShowTop()
         {
             get_user_name(top[s], pname, 15)
             WeaponDisplayName(g_weaponList[g_level[top[s]]], wname, 15)
-            formatex(line[s], 63, "%d. %s - %s (-%d-)", s + 1, pname, wname, g_level[top[s]] + 1)
+            formatex(line[s], 63, "%d. %s - %s - LVL %d", s + 1, pname, wname, g_level[top[s]] + 1)
         }
     }
 

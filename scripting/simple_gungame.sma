@@ -3,7 +3,7 @@
 #include <cstrike>
 
 #define PLUGIN_NAME    "Simple GunGame"
-#define PLUGIN_VERSION "1.0.0"
+#define PLUGIN_VERSION "1.0.1"
 #define PLUGIN_AUTHOR  "ToRRent"
 
 #define TASK_RESPAWN  500
@@ -82,7 +82,6 @@ new g_old_map_weapons
 new g_old_free_armor
 new g_old_round_infinite
 new g_old_timelimit
-new g_old_csr_scorecap
 new g_old_infammo
 
 native csr_custom_win();
@@ -203,7 +202,6 @@ SaveServerCvars()
     g_old_round_infinite   = get_cvar_num("mp_round_infinite")
     g_old_timelimit        = get_cvar_num("mp_timelimit")
     g_old_infammo          = get_cvar_num("mp_infinite_ammo")
-    if(LibraryExists("csr", LibType_Library)) g_old_csr_scorecap = get_cvar_num("rank_score_cap")
 }
 
 ApplyGunGameCvars()
@@ -217,8 +215,7 @@ ApplyGunGameCvars()
     set_cvar_num("mp_give_player_c4",              0)  // Disable bomb — disables bomb objective
     set_cvar_num("mp_weapons_allow_map_placed",    0)  // No picking up weapons from ground
     set_cvar_num("mp_free_armor",                  2)  // Full armor + helmet on every spawn
-    set_cvar_num("mp_infinite_ammo"                2)  // Infinite amount of magazines
-    if(LibraryExists("csr", LibType_Library)) set_cvar_num("rank_score_cap", 1) // We set match scores by player level
+    set_cvar_num("mp_infinite_ammo",               2)  // Infinite amount of magazines
 }
 
 RestoreServerCvars()
@@ -232,8 +229,7 @@ RestoreServerCvars()
     set_cvar_num("mp_give_player_c4",              g_old_give_c4)
     set_cvar_num("mp_weapons_allow_map_placed",    g_old_map_weapons)
     set_cvar_num("mp_free_armor",                  g_old_free_armor)
-    set_cvar_num("mp_infinite_ammo"                g_old_infammo)
-    if(LibraryExists("csr", LibType_Library)) set_cvar_num("rank_score_cap", g_old_csr_scorecap)
+    set_cvar_num("mp_infinite_ammo",               g_old_infammo)
 }
 
 BuildWeaponPreset(WeaponPreset:preset)

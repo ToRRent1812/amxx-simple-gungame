@@ -3,7 +3,7 @@
 #include <cstrike>
 
 #define PLUGIN_NAME    "Simple GunGame"
-#define PLUGIN_VERSION "1.0.1"
+#define PLUGIN_VERSION "1.0.2"
 #define PLUGIN_AUTHOR  "ToRRent"
 
 #define TASK_RESPAWN  500
@@ -547,7 +547,7 @@ CheckLevelUp(id)
 
         for(new i = 1; i <= MaxClients; i++)
         {
-            if(is_user_connected(i) && LibraryExists("csr", LibType_Library)) csr_set_score(i, g_level[i])
+            if(is_user_connected(i) && LibraryExists("csr", LibType_Library)) csr_set_score(i, g_level[i] + 1)
             if(is_user_alive(i))
             {
                 rg_remove_all_items(i)

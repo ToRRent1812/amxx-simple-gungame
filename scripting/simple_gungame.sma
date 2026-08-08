@@ -3,7 +3,7 @@
 #include <cstrike>
 
 #define PLUGIN_NAME    "Simple GunGame"
-#define PLUGIN_VERSION "1.0.2"
+#define PLUGIN_VERSION "1.0.3"
 #define PLUGIN_AUTHOR  "ToRRent"
 
 #define TASK_RESPAWN  500
@@ -547,7 +547,6 @@ CheckLevelUp(id)
 
         for(new i = 1; i <= MaxClients; i++)
         {
-            if(is_user_connected(i) && LibraryExists("csr", LibType_Library)) csr_set_score(i, g_level[i] + 1)
             if(is_user_alive(i))
             {
                 rg_remove_all_items(i)
@@ -756,10 +755,28 @@ public Task_ShowTop()
 
 public FinishTheMap()
 {
-    if(LibraryExists("csr", LibType_Library)) csr_custom_win()
+    if(LibraryExists("csr", LibType_Library))
+    {
+        SetCSRScores()
+        csr_custom_win()
+    }
     ResetAllPlayers()
     set_task(3.0, "Task_StopTheMatch")
     set_task(10.0, "Task_RestoreCvars")
+}
+
+SetCSRScores()
+{
+    if(!LibraryExists("csr", LibType_Library))
+        return
+
+    for(new i = 1; i <= MaxClients; i++)
+    {
+        if(!is_user_connected(i))
+            continue
+
+        csr_set_score(i, g_level[i] + 1)
+    }
 }
 
 public Task_StopTheMatch()

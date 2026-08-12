@@ -3,7 +3,7 @@
 #include <cstrike>
 
 #define PLUGIN_NAME    "Simple GunGame"
-#define PLUGIN_VERSION "1.0.3"
+#define PLUGIN_VERSION "1.0.4"
 #define PLUGIN_AUTHOR  "ToRRent"
 
 #define TASK_RESPAWN  500
@@ -59,6 +59,7 @@ new g_points[33]
 new g_level[33]
 new g_deaths[33]
 new bool:g_threwGrenade[33]
+new bool:g_killCredited[33]
 
 new g_syncScoreboardHud
 new g_syncPlayerHud
@@ -187,6 +188,7 @@ public Task_ResetData()
         g_level[i]  = 0
         g_deaths[i] = 0
         g_threwGrenade[i] = false
+        g_killCredited[i] = false
     }
 }
 
@@ -271,6 +273,7 @@ public client_putinserver(id)
     g_level[id]  = GetWorstPlayerLevel(id)
     g_deaths[id] = 0
     g_threwGrenade[id] = false
+    g_killCredited[id] = false
 }
 
 public PlayerTeamChosen(id)
@@ -332,6 +335,9 @@ public PlayerSpawn_Post(id)
 {
     if(!is_user_connected(id) || !is_user_alive(id))
         return
+
+    g_threwGrenade[id] = false
+    g_killCredited[id] = false
 
     GiveLevelWeapon(id)
 }
@@ -441,8 +447,11 @@ public PlayerKilled_Post(victim, attacker)
     }
     else if(weapon == CSW_KNIFE && g_threwGrenade[attacker])
     {
-        g_threwGrenade[attacker] = false
-        g_points[attacker]++
+        if(!g_killCredited[attacker])
+        {
+            g_killCredited[attacker] = true
+            g_points[attacker]++
+        }
     }
     else if(headshot)
         g_points[attacker] += 2
@@ -473,6 +482,7 @@ public OnGrenadeThrown(id)
         return
 
     g_threwGrenade[id] = true
+    g_killCredited[id] = false
     remove_task(id + TASK_GRENADE)
     set_task(2.0, "Task_ReplenishGrenade", id + TASK_GRENADE)
 }
@@ -481,13 +491,15 @@ public Task_ReplenishGrenade(taskid)
 {
     new id = taskid - TASK_GRENADE
 
+    g_threwGrenade[id] = false
+    g_killCredited[id] = false
+
     if(!is_user_connected(id) || !is_user_alive(id))
         return
 
     if(g_weaponList[g_level[id]] != CSW_HEGRENADE)
         return
 
-    g_threwGrenade[id] = false
     rg_give_item(id, "weapon_hegrenade", GT_APPEND)
 }
 
@@ -590,6 +602,8 @@ ResetAllPlayers()
         g_points[i] = 0
         g_level[i]  = 0
         g_deaths[i] = 0
+        g_threwGrenade[i] = false
+        g_killCredited[i] = false
     }
 
     g_voteStarted   = false

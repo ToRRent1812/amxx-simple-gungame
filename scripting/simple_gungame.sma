@@ -3,11 +3,13 @@
 #include <cstrike>
 
 #define PLUGIN_NAME    "Simple GunGame"
-#define PLUGIN_VERSION "1.0.4"
+#define PLUGIN_VERSION "1.0.5"
 #define PLUGIN_AUTHOR  "ToRRent"
 
 #define TASK_RESPAWN  500
 #define TASK_GRENADE  600
+
+#define GR_PLR_DROP_GUN_NO  9
 
 // cheapest to most expensive
 new const g_PresetPriceAsc[] =
@@ -108,6 +110,7 @@ public plugin_init()
     RegisterHookChain(RG_HandleMenu_ChooseTeam, "PlayerTeamChosen", true)
     RegisterHookChain(RG_CBasePlayer_ThrowGrenade,       "OnGrenadeThrown", false)
     RegisterHookChain(RG_CBasePlayerWeapon_DefaultDeploy, "OnWeaponDeploy",  false)
+    RegisterHookChain(RG_CSGameRules_DeadPlayerWeapons, "OnDeadPlayerWeapons", false)
     register_logevent("Server_Restart",2,"1&Restart_Round_","1=Game_Commencing")
 
     g_syncScoreboardHud = CreateHudSyncObj()
@@ -216,6 +219,8 @@ ApplyGunGameCvars()
     set_cvar_num("mp_respawn_immunity_force_unset",2)  // Remove immunity when player attacks
     set_cvar_num("mp_give_player_c4",              0)  // Disable bomb — disables bomb objective
     set_cvar_num("mp_weapons_allow_map_placed",    0)  // No picking up weapons from ground
+    set_cvar_num("mp_weapondrop",                  0)  // No weapon drops
+    set_cvar_num("mp_ammodrop"                     0)  // no ammo drop
     set_cvar_num("mp_free_armor",                  2)  // Full armor + helmet on every spawn
     set_cvar_num("mp_infinite_ammo",               2)  // Infinite amount of magazines
 }
@@ -501,6 +506,12 @@ public Task_ReplenishGrenade(taskid)
         return
 
     rg_give_item(id, "weapon_hegrenade", GT_APPEND)
+}
+
+public OnDeadPlayerWeapons()
+{
+    SetHookChainReturn(ATYPE_INTEGER, GR_PLR_DROP_GUN_NO)
+    return HC_SUPERCEDE
 }
 
 public Task_Respawn(taskid)

@@ -3,13 +3,11 @@
 #include <cstrike>
 
 #define PLUGIN_NAME    "Simple GunGame"
-#define PLUGIN_VERSION "1.0.5"
+#define PLUGIN_VERSION "1.0.6"
 #define PLUGIN_AUTHOR  "ToRRent"
 
 #define TASK_RESPAWN  500
 #define TASK_GRENADE  600
-
-#define GR_PLR_DROP_GUN_NO  9
 
 // cheapest to most expensive
 new const g_PresetPriceAsc[] =
@@ -86,6 +84,8 @@ new g_old_free_armor
 new g_old_round_infinite
 new g_old_timelimit
 new g_old_infammo
+new g_old_csr_manual_scoring
+new bool:g_bCsrManualScoringSet
 
 native csr_custom_win();
 native csr_set_score(id, score);
@@ -151,6 +151,10 @@ IsValidMap()
 
 public plugin_cfg()
 {
+    new pcvar = get_cvar_pointer("rank_manual_scoring")
+    g_old_csr_manual_scoring = (pcvar) ? get_pcvar_num(pcvar) : 0
+    g_bCsrManualScoringSet = false
+
     if(!IsValidMap())
     {
         log_amx("[GunGame] Map does not match gg_/dm_/fy_ - plugin disabled.")
@@ -167,10 +171,18 @@ public plugin_cfg()
     g_currentPreset = WeaponPreset:random_num(0, 3)
     BuildWeaponPreset(g_currentPreset)
     ApplyGunGameCvars()
+
+    if(LibraryExists("csr", LibType_Library))
+    {
+        set_cvar_num("rank_manual_scoring", 1)
+        g_bCsrManualScoringSet = true
+    }
 }
 
 public plugin_end()
 {
+    if(g_bCsrManualScoringSet)
+        set_cvar_num("rank_manual_scoring", g_old_csr_manual_scoring)
     RestoreServerCvars()
 }
 
@@ -220,7 +232,7 @@ ApplyGunGameCvars()
     set_cvar_num("mp_give_player_c4",              0)  // Disable bomb — disables bomb objective
     set_cvar_num("mp_weapons_allow_map_placed",    0)  // No picking up weapons from ground
     set_cvar_num("mp_weapondrop",                  0)  // No weapon drops
-    set_cvar_num("mp_ammodrop"                     0)  // no ammo drop
+    set_cvar_num("mp_ammodrop",                    0)  // no ammo drop
     set_cvar_num("mp_free_armor",                  2)  // Full armor + helmet on every spawn
     set_cvar_num("mp_infinite_ammo",               2)  // Infinite amount of magazines
 }
@@ -510,7 +522,7 @@ public Task_ReplenishGrenade(taskid)
 
 public OnDeadPlayerWeapons()
 {
-    SetHookChainReturn(ATYPE_INTEGER, GR_PLR_DROP_GUN_NO)
+    SetHookChainReturn(ATYPE_INTEGER, 9)
     return HC_SUPERCEDE
 }
 

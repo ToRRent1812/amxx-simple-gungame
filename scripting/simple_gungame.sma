@@ -3,7 +3,7 @@
 #include <cstrike>
 
 #define PLUGIN_NAME    "Simple GunGame"
-#define PLUGIN_VERSION "1.0.6"
+#define PLUGIN_VERSION "1.0.7"
 #define PLUGIN_AUTHOR  "ToRRent"
 
 #define TASK_RESPAWN  500
@@ -356,13 +356,20 @@ public PlayerSpawn_Post(id)
     g_threwGrenade[id] = false
     g_killCredited[id] = false
 
+    RequestFrame("Task_GiveWeaponFrame", id)
+}
+
+public Task_GiveWeaponFrame(id)
+{
+    if(!is_user_connected(id) || !is_user_alive(id))
+        return
+
     GiveLevelWeapon(id)
 }
 
 GiveLevelWeapon(id)
 {
-    if(g_level[id] >= g_weaponCount)
-        return
+    g_level[id] = clamp(g_level[id], 0, g_weaponCount - 1)
 
     rg_remove_all_items(id)
 
@@ -393,7 +400,7 @@ public Task_ShowPlayerHUD()
     {
         new id = players[i]
 
-        new lvl = clamp(g_level[id], 0, g_weaponCount)
+        new lvl = clamp(g_level[id], 0, g_weaponCount - 1)
         new color = clamp(lvl*10, 0, 255)
 
         WeaponDisplayName(g_weaponList[lvl], wname, charsmax(wname))
@@ -522,7 +529,7 @@ public Task_ReplenishGrenade(taskid)
 
 public OnDeadPlayerWeapons()
 {
-    SetHookChainReturn(ATYPE_INTEGER, 9)
+    SetHookChainReturn(ATYPE_INTEGER, 10)
     return HC_SUPERCEDE
 }
 
@@ -569,14 +576,11 @@ CheckLevelUp(id)
     g_deaths[id] = 0
     g_level[id]++
     client_cmd(id, "spk gungame/smb3_powerup.wav")
-    new playername[32]
-    get_user_name(id, playername, 31)
-    if(g_weaponList[g_level[id]] == CSW_KNIFE) client_print_color(0, print_team_default, "%L", LANG_PLAYER, "GG_FINAL_LEVEL", playername)
-
-    CheckLeaderForVote()
 
     if(g_level[id] >= g_weaponCount)
     {
+        g_level[id] = g_weaponCount - 1
+
         new name[32]
         get_user_name(id, name, 31)
 
@@ -597,6 +601,12 @@ CheckLevelUp(id)
         return
     }
 
+    new playername[32]
+    get_user_name(id, playername, 31)
+    if(g_weaponList[g_level[id]] == CSW_KNIFE) client_print_color(0, print_team_default, "%L", LANG_PLAYER, "GG_FINAL_LEVEL", playername)
+
+    CheckLeaderForVote()
+
     if(is_user_alive(id))
         GiveLevelWeapon(id)
 }
@@ -608,6 +618,10 @@ CheckLevelDown(id)
 
     g_points[id] = 0
     g_deaths[id] = 0
+
+    if(g_level[id] <= 0)
+        return
+
     g_level[id]--
     client_cmd(id, "spk gungame/smb3_powerdown.wav")
 

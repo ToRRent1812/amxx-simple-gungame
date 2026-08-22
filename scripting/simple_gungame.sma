@@ -3,7 +3,7 @@
 #include <cstrike>
 
 #define PLUGIN_NAME    "Simple GunGame"
-#define PLUGIN_VERSION "1.0.7"
+#define PLUGIN_VERSION "1.0.8"
 #define PLUGIN_AUTHOR  "ToRRent"
 
 #define TASK_RESPAWN  500
@@ -771,13 +771,13 @@ public Task_ShowTop()
     {
         if(!top[s] || !is_user_connected(top[s]))
         {
-            formatex(line[s], 63, "%d. ---", s + 1)
+            formatex(line[s], 63, "---")
         }
         else
         {
             get_user_name(top[s], pname, 15)
             WeaponDisplayName(g_weaponList[g_level[top[s]]], wname, 15)
-            formatex(line[s], 63, "%d. %s - %s - LVL %d", s + 1, pname, wname, g_level[top[s]] + 1)
+            formatex(line[s], 63, "%d - %s - %s", g_level[top[s]] + 1, pname, wname)
         }
     }
 

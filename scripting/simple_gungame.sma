@@ -3,11 +3,14 @@
 #include <cstrike>
 
 #define PLUGIN_NAME    "Simple GunGame"
-#define PLUGIN_VERSION "1.0.8"
+#define PLUGIN_VERSION "1.0.9"
 #define PLUGIN_AUTHOR  "ToRRent"
 
 #define TASK_RESPAWN  500
 #define TASK_GRENADE  600
+
+#define HUD_HIDE_TIMER    (1<<4)    // Hide round timer
+#define HUD_HIDE_MONEY    (1<<5)    // Hide money counter
 
 // cheapest to most expensive
 new const g_PresetPriceAsc[] =
@@ -63,6 +66,7 @@ new bool:g_killCredited[33]
 
 new g_syncScoreboardHud
 new g_syncPlayerHud
+new g_msgHideWeapon
 
 new g_CvarXpNeeded
 new g_CvarHightierXp
@@ -95,6 +99,10 @@ public plugin_init()
     register_plugin(PLUGIN_NAME, PLUGIN_VERSION, PLUGIN_AUTHOR)
     register_dictionary("simple_gungame.txt")
 
+    register_event("ResetHUD", "onResetHUD", "b")
+    g_msgHideWeapon = get_user_msgid("HideWeapon")
+    register_message(g_msgHideWeapon, "msgHideWeapon")
+    
     SaveServerCvars()
 
     g_CvarXpNeeded    = register_cvar("gg_xp_needed",        "2")
@@ -117,7 +125,7 @@ public plugin_init()
     g_syncPlayerHud = CreateHudSyncObj()
 
     set_task(1.0, "Task_ShowTop", _, _, _, "b")
-    set_task(1.0, "Task_ShowPlayerHUD", _, _, _, "b")
+    set_task(0.5, "Task_ShowPlayerHUD", _, _, _, "b")
 
     g_currentPreset = WeaponPreset:0
 
@@ -184,6 +192,20 @@ public plugin_end()
     if(g_bCsrManualScoringSet)
         set_cvar_num("rank_manual_scoring", g_old_csr_manual_scoring)
     RestoreServerCvars()
+}
+
+public onResetHUD(id)
+{
+    new iHideFlags = HUD_HIDE_MONEY | HUD_HIDE_TIMER
+    message_begin(MSG_ONE, g_msgHideWeapon, _, id)
+    write_byte(iHideFlags)
+    message_end()
+}
+
+public msgHideWeapon()
+{
+    new iHideFlags = HUD_HIDE_MONEY | HUD_HIDE_TIMER
+    set_msg_arg_int(1, ARG_BYTE, get_msg_arg_int(1) | iHideFlags)
 }
 
 public Server_Restart()
@@ -405,7 +427,7 @@ public Task_ShowPlayerHUD()
 
         WeaponDisplayName(g_weaponList[lvl], wname, charsmax(wname))
 
-        set_hudmessage(color, 150, 0, -1.0, 0.75, 0, 0.0, 1.1, 0.0, 0.1)
+        set_hudmessage(color, 150, 0, -1.0, 0.75, 0, 0.0, 0.6, 0.0, 0.1)
         if(g_weaponList[lvl] == CSW_KNIFE) ShowSyncHudMsg(id, g_syncPlayerHud, "%L", id, "GG_HUD_FINAL", GetPlayerRank(id))
         else ShowSyncHudMsg(id, g_syncPlayerHud, "LVL %d/%d - %s  |  XP %d/%d  |  TOP %d", lvl+1, g_weaponCount, wname, g_points[id], GetNeededPoints(id), GetPlayerRank(id), lvl+1)
     }

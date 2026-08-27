@@ -3,14 +3,14 @@
 #include <cstrike>
 
 #define PLUGIN_NAME    "Simple GunGame"
-#define PLUGIN_VERSION "1.0.9"
+#define PLUGIN_VERSION "1.0.10"
 #define PLUGIN_AUTHOR  "ToRRent"
 
 #define TASK_RESPAWN  500
 #define TASK_GRENADE  600
 
-#define HUD_HIDE_TIMER    (1<<4)    // Hide round timer
-#define HUD_HIDE_MONEY    (1<<5)    // Hide money counter
+#define HUD_HIDE_TIMER    (1<<4)
+#define HUD_HIDE_MONEY    (1<<5)
 
 // cheapest to most expensive
 new const g_PresetPriceAsc[] =
@@ -257,6 +257,7 @@ ApplyGunGameCvars()
     set_cvar_num("mp_ammodrop",                    0)  // no ammo drop
     set_cvar_num("mp_free_armor",                  2)  // Full armor + helmet on every spawn
     set_cvar_num("mp_infinite_ammo",               2)  // Infinite amount of magazines
+    server_cmd("sv_restart 1")
 }
 
 RestoreServerCvars()
@@ -328,8 +329,6 @@ public Task_ShowTutorial(id)
         return
 
     new menutext[256]
-
-    // Resolve each line separately — formatex does not support %L
     new l_title[64], l_kill[64], l_head[64], l_steal[64], l_handicap[64], l_close[32]
 
     format(l_title,    63, "%L", id, "GG_TUT_TITLE")
@@ -429,7 +428,7 @@ public Task_ShowPlayerHUD()
 
         set_hudmessage(color, 150, 0, -1.0, 0.75, 0, 0.0, 0.6, 0.0, 0.1)
         if(g_weaponList[lvl] == CSW_KNIFE) ShowSyncHudMsg(id, g_syncPlayerHud, "%L", id, "GG_HUD_FINAL", GetPlayerRank(id))
-        else ShowSyncHudMsg(id, g_syncPlayerHud, "LVL %d/%d - %s  |  XP %d/%d  |  TOP %d", lvl+1, g_weaponCount, wname, g_points[id], GetNeededPoints(id), GetPlayerRank(id), lvl+1)
+        else ShowSyncHudMsg(id, g_syncPlayerHud, "LVL %d/%d - %s  |  XP %d/%d", lvl+1, g_weaponCount, wname, g_points[id], GetNeededPoints(id))
     }
 }
 
@@ -507,8 +506,8 @@ public PlayerKilled_Post(victim, attacker)
     if(weapon != CSW_KNIFE && weapon != CSW_HEGRENADE)
         RefillMagazine(attacker)
 
-    client_cmd(attacker, "spk buttons/bell1.wav")
-    CheckLevelUp(attacker)
+    if(!CheckLevelUp(attacker))
+        client_cmd(attacker, "spk buttons/bell1.wav")
 
     g_deaths[victim]++
 
@@ -587,12 +586,12 @@ GetNeededPoints(id)
     return get_pcvar_num(g_CvarXpNeeded)
 }
 
-CheckLevelUp(id)
+bool:CheckLevelUp(id)
 {
     new needed = GetNeededPoints(id)
 
     if(g_points[id] < needed)
-        return
+        return false
 
     g_points[id] = 0
     g_deaths[id] = 0
@@ -618,9 +617,9 @@ CheckLevelUp(id)
         client_print_color(0, print_team_default, "%L", LANG_PLAYER, "GG_MATCH_WON", name)
 
         g_matchWon = true
-        FinishTheMap()
+        FinishTheMap(id)
 
-        return
+        return true
     }
 
     new playername[32]
@@ -631,6 +630,8 @@ CheckLevelUp(id)
 
     if(is_user_alive(id))
         GiveLevelWeapon(id)
+
+    return true
 }
 
 CheckLevelDown(id)
@@ -826,11 +827,11 @@ public Task_ShowTop()
     }
 }
 
-public FinishTheMap()
+public FinishTheMap(winner)
 {
     if(LibraryExists("csr", LibType_Library))
     {
-        SetCSRScores()
+        SetCSRScores(winner)
         csr_custom_win()
     }
     ResetAllPlayers()
@@ -838,7 +839,7 @@ public FinishTheMap()
     set_task(10.0, "Task_RestoreCvars")
 }
 
-SetCSRScores()
+SetCSRScores(winner)
 {
     if(!LibraryExists("csr", LibType_Library))
         return
@@ -848,7 +849,10 @@ SetCSRScores()
         if(!is_user_connected(i))
             continue
 
-        csr_set_score(i, g_level[i] + 1)
+        if(i == winner)
+            csr_set_score(i, g_weaponCount + 1)
+        else
+            csr_set_score(i, g_level[i] + 1)
     }
 }
 

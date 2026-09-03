@@ -3,7 +3,7 @@
 #include <cstrike>
 
 #define PLUGIN_NAME    "Simple GunGame"
-#define PLUGIN_VERSION "1.0.10"
+#define PLUGIN_VERSION "1.0.11"
 #define PLUGIN_AUTHOR  "ToRRent"
 
 #define TASK_RESPAWN  500
@@ -106,7 +106,7 @@ public plugin_init()
     SaveServerCvars()
 
     g_CvarXpNeeded    = register_cvar("gg_xp_needed",        "2")
-    g_CvarHightierXp  = register_cvar("gg_hightier_xp_needed","5")
+    g_CvarHightierXp  = register_cvar("gg_hightier_xp_needed","6")
     g_CvarKnifeSteal  = register_cvar("gg_knife_steal",       "1")
     g_CvarDeathBonus  = register_cvar("gg_death_bonus",       "5")
     g_CvarRespawnTime = register_cvar("gg_respawn_time",     "2.0")
@@ -129,7 +129,6 @@ public plugin_init()
 
     g_currentPreset = WeaponPreset:0
 
-    register_menucmd(register_menuid("gg_tutorial"), MENU_KEY_0, "Menu_TutorialClose")
 }
 
 public plugin_precache()
@@ -318,39 +317,8 @@ public client_putinserver(id)
 
 public PlayerTeamChosen(id)
 {
-    set_task(get_pcvar_float(g_CvarRespawnTime)+1.5, "Task_ShowTutorial", id)
     remove_task(id + TASK_RESPAWN)
     set_task(get_pcvar_float(g_CvarRespawnTime), "Task_Respawn", id + TASK_RESPAWN)
-}
-
-public Task_ShowTutorial(id)
-{
-    if(!is_user_connected(id))
-        return
-
-    new menutext[256]
-    new l_title[64], l_kill[64], l_head[64], l_steal[64], l_handicap[64], l_close[32]
-
-    format(l_title,    63, "%L", id, "GG_TUT_TITLE")
-    format(l_kill,     63, "%L", id, "GG_TUT_KILL")
-    format(l_head,     63, "%L", id, "GG_TUT_HEADSHOT")
-    format(l_steal,    63, "%L", id, "GG_TUT_STEAL")
-    format(l_handicap, 63, "%L", id, "GG_TUT_HANDICAP", get_pcvar_num(g_CvarDeathBonus))
-    format(l_close,    31, "%L", id, "GG_TUT_CLOSE")
-
-    if(get_pcvar_num(g_CvarKnifeSteal) > 0)
-        formatex(menutext, 255, "%s^n^n%s^n%s^n%s^n%s^n^n%s",
-            l_title, l_kill, l_head, l_steal, l_handicap, l_close)
-    else
-        formatex(menutext, 255, "%s^n^n%s^n%s^n%s^n^n%s",
-            l_title, l_kill, l_head, l_handicap, l_close)
-
-    show_menu(id, MENU_KEY_0, menutext, 10, "gg_tutorial")
-}
-
-public Menu_TutorialClose(id, key)
-{
-    return PLUGIN_HANDLED
 }
 
 GetWorstPlayerLevel(exclude)

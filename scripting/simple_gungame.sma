@@ -3,7 +3,7 @@
 #include <cstrike>
 
 #define PLUGIN_NAME    "Simple GunGame"
-#define PLUGIN_VERSION "1.0.11"
+#define PLUGIN_VERSION "1.0.12"
 #define PLUGIN_AUTHOR  "ToRRent"
 
 #define TASK_RESPAWN  500
@@ -317,6 +317,9 @@ public client_putinserver(id)
 
 public PlayerTeamChosen(id)
 {
+    if(cs_get_user_team(id) == CS_TEAM_SPECTATOR)
+        return
+
     remove_task(id + TASK_RESPAWN)
     set_task(get_pcvar_float(g_CvarRespawnTime), "Task_Respawn", id + TASK_RESPAWN)
 }

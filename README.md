@@ -9,7 +9,7 @@ To Level up, You need xp:
 1 kill = 1 XP  
 1 Headshot = 2 XP  
 Knife kill = Steal 1 XP  
-Stuck on a gun? Die N times = 1 XP  
+Stuck on a gun? Players skip levels after specified time  
   
 There is a realtime top5 leaderboard below radar, below crosshair You can see your progress.  
 Mod is compatible with __gg___, __dm___ and __fy___ maps.  
@@ -26,7 +26,7 @@ Plugin has __Mapchooser.amxx__, __Mapchooser4.amxx__ and __Galileo.amxx__ map vo
 __gg_xp_needed 2__ - Amount of XP needed to level up  
 __gg_hightier_xp_needed 5__ - Amount of XP needed to level up high tier weapon: Deagle, AK, M4, Famas, AWP   
 __gg_knife_steal 1__ - Enable/Disable XP stealing  
-__gg_death_bonus 5__ - How many deaths on 1 weapon level before getting 1 xp  
+__gg_autopromote_time 60.0__ - Seconds player needs to be stuck on a weapon to autopromote (0 = disabled, Above 0 = Time needed per 1 XP)  
 __gg_respawn_time 2.0__ - Delay before respawn  
 ## Instalattion
 Make sure You have __latest__ [ReHLDS with libraries](https://rehlds.dev/) and [AMXX 1.10](https://www.amxmodx.org/downloads.php) 

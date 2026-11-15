@@ -3,7 +3,7 @@
 #include <cstrike>
 
 #define PLUGIN_NAME    "Simple GunGame"
-#define PLUGIN_VERSION "1.0.12"
+#define PLUGIN_VERSION "1.1.0"
 #define PLUGIN_AUTHOR  "ToRRent"
 
 #define TASK_RESPAWN  500
@@ -60,7 +60,7 @@ new g_weaponCount
 
 new g_points[33]
 new g_level[33]
-new g_deaths[33]
+new Float:g_fLevelTime[33]
 new bool:g_threwGrenade[33]
 new bool:g_killCredited[33]
 
@@ -71,7 +71,7 @@ new g_msgHideWeapon
 new g_CvarXpNeeded
 new g_CvarHightierXp
 new g_CvarKnifeSteal
-new g_CvarDeathBonus
+new g_CvarAutopromote
 new g_CvarRespawnTime
 new g_CvarFF
 new WeaponPreset:g_currentPreset
@@ -108,7 +108,7 @@ public plugin_init()
     g_CvarXpNeeded    = register_cvar("gg_xp_needed",        "2")
     g_CvarHightierXp  = register_cvar("gg_hightier_xp_needed","6")
     g_CvarKnifeSteal  = register_cvar("gg_knife_steal",       "1")
-    g_CvarDeathBonus  = register_cvar("gg_death_bonus",       "5")
+    g_CvarAutopromote = register_cvar("gg_autopromote_time",  "60.0")
     g_CvarRespawnTime = register_cvar("gg_respawn_time",     "2.0")
 
     g_CvarFF          = get_cvar_pointer("mp_friendlyfire")
@@ -126,6 +126,7 @@ public plugin_init()
 
     set_task(1.0, "Task_ShowTop", _, _, _, "b")
     set_task(0.5, "Task_ShowPlayerHUD", _, _, _, "b")
+    set_task(1.0, "Task_Autopromote", _, _, _, "b")
 
     g_currentPreset = WeaponPreset:0
 
@@ -172,7 +173,7 @@ public plugin_cfg()
     if(get_pcvar_num(g_CvarXpNeeded) < 1) set_pcvar_num(g_CvarXpNeeded, 1)
     if(get_pcvar_num(g_CvarHightierXp) < 1) set_pcvar_num(g_CvarHightierXp, 1)
     if(get_pcvar_num(g_CvarKnifeSteal) < 0) set_pcvar_num(g_CvarKnifeSteal, 0)
-    if(get_pcvar_num(g_CvarDeathBonus) < 0) set_pcvar_num(g_CvarDeathBonus, 0)
+    if(get_pcvar_float(g_CvarAutopromote) < 0.0) set_pcvar_float(g_CvarAutopromote, 0.0)
     if(get_pcvar_float(g_CvarRespawnTime) < 0.0) set_pcvar_float(g_CvarRespawnTime, 1.0)
 
     g_currentPreset = WeaponPreset:random_num(0, 3)
@@ -215,6 +216,8 @@ public Server_Restart()
 
 public Task_ResetData()
 {
+    new Float:now = get_gametime()
+
     for(new i = 1; i <= MaxClients; i++)
     {
         if(!is_user_connected(i))
@@ -222,7 +225,7 @@ public Task_ResetData()
 
         g_points[i] = 0
         g_level[i]  = 0
-        g_deaths[i] = 0
+        g_fLevelTime[i] = now
         g_threwGrenade[i] = false
         g_killCredited[i] = false
     }
@@ -310,7 +313,7 @@ public client_putinserver(id)
 {
     g_points[id] = 0
     g_level[id]  = GetWorstPlayerLevel(id)
-    g_deaths[id] = 0
+    g_fLevelTime[id] = get_gametime()
     g_threwGrenade[id] = false
     g_killCredited[id] = false
 }
@@ -387,6 +390,8 @@ public Task_ShowPlayerHUD()
     get_players(players, num, "ach")
 
     new wname[16]
+    new Float:now = get_gametime()
+    new Float:autopromote = get_pcvar_float(g_CvarAutopromote)
 
     for(new i = 0; i < num; i++)
     {
@@ -399,6 +404,11 @@ public Task_ShowPlayerHUD()
 
         set_hudmessage(color, 150, 0, -1.0, 0.75, 0, 0.0, 0.6, 0.0, 0.1)
         if(g_weaponList[lvl] == CSW_KNIFE) ShowSyncHudMsg(id, g_syncPlayerHud, "%L", id, "GG_HUD_FINAL", GetPlayerRank(id))
+        else if(autopromote > 0.0 && IsAutopromoteLevel(lvl))
+        {
+            new remaining = GetAutopromoteRemaining(id, now)
+            ShowSyncHudMsg(id, g_syncPlayerHud, "LVL %d/%d - %s  |  XP %d/%d  |  %d:%02d", lvl+1, g_weaponCount, wname, g_points[id], GetNeededPoints(id), remaining / 60, remaining % 60)
+        }
         else ShowSyncHudMsg(id, g_syncPlayerHud, "LVL %d/%d - %s  |  XP %d/%d", lvl+1, g_weaponCount, wname, g_points[id], GetNeededPoints(id))
     }
 }
@@ -479,14 +489,6 @@ public PlayerKilled_Post(victim, attacker)
 
     if(!CheckLevelUp(attacker))
         client_cmd(attacker, "spk buttons/bell1.wav")
-
-    g_deaths[victim]++
-
-    if(get_pcvar_num(g_CvarDeathBonus) > 0 && g_deaths[victim] % get_pcvar_num(g_CvarDeathBonus) == 0 && g_weaponList[g_level[victim]] != CSW_KNIFE && g_weaponList[g_level[victim]] != CSW_HEGRENADE)
-    {
-        g_points[victim]++
-        CheckLevelUp(victim)
-    }
 }
 
 public OnGrenadeThrown(id)
@@ -565,7 +567,7 @@ bool:CheckLevelUp(id)
         return false
 
     g_points[id] = 0
-    g_deaths[id] = 0
+    g_fLevelTime[id] = get_gametime()
     g_level[id]++
     client_cmd(id, "spk gungame/smb3_powerup.wav")
 
@@ -611,7 +613,7 @@ CheckLevelDown(id)
         return
 
     g_points[id] = 0
-    g_deaths[id] = 0
+    g_fLevelTime[id] = get_gametime()
 
     if(g_level[id] <= 0)
         return
@@ -623,8 +625,90 @@ CheckLevelDown(id)
         GiveLevelWeapon(id)
 }
 
+bool:IsAutopromoteLevel(lvl)
+{
+    // Last 2 levels (grenade, knife) are excluded
+    if(g_weaponCount < 3)
+        return false
+
+    return (lvl >= 0 && lvl <= g_weaponCount - 3)
+}
+
+GetAutopromoteLimit(id)
+{
+    new Float:perXp = get_pcvar_float(g_CvarAutopromote)
+
+    if(perXp <= 0.0)
+        return 0
+
+    return floatround(float(GetNeededPoints(id)) * perXp)
+}
+
+GetAutopromoteRemaining(id, Float:now)
+{
+    new limit = GetAutopromoteLimit(id)
+
+    if(limit <= 0)
+        return 0
+
+    new elapsed = floatround(now - g_fLevelTime[id])
+    new remaining = limit - elapsed
+
+    return (remaining < 0) ? 0 : remaining
+}
+
+public Task_Autopromote()
+{
+    if(g_matchWon)
+        return
+
+    if(g_weaponCount < 3)
+        return
+
+    if(get_pcvar_float(g_CvarAutopromote) <= 0.0)
+        return
+
+    new Float:now = get_gametime()
+
+    for(new id = 1; id <= MaxClients; id++)
+    {
+        if(!is_user_connected(id))
+            continue
+
+        new lvl = clamp(g_level[id], 0, g_weaponCount - 1)
+
+        if(!IsAutopromoteLevel(lvl))
+            continue
+
+        new limit = GetAutopromoteLimit(id)
+
+        if(limit <= 0)
+            continue
+
+        if(now - g_fLevelTime[id] < float(limit))
+            continue
+
+        // Stuck too long: grant needed XP and move to next level
+        g_points[id] = 0
+        g_fLevelTime[id] = now
+        g_level[id]++
+        client_cmd(id, "spk gungame/smb3_powerup.wav")
+
+        new playername[32]
+        get_user_name(id, playername, 31)
+        if(g_weaponList[g_level[id]] == CSW_KNIFE) client_print_color(0, print_team_default, "%L", LANG_PLAYER, "GG_FINAL_LEVEL", playername)
+
+        CheckLeaderForVote()
+
+        if(is_user_alive(id))
+            GiveLevelWeapon(id)
+    }
+}
+
 ResetAllPlayers()
 {
+    new Float:now = get_gametime()
+
     for(new i = 1; i <= MaxClients; i++)
     {
         if(!is_user_connected(i))
@@ -632,7 +716,7 @@ ResetAllPlayers()
 
         g_points[i] = 0
         g_level[i]  = 0
-        g_deaths[i] = 0
+        g_fLevelTime[i] = now
         g_threwGrenade[i] = false
         g_killCredited[i] = false
     }
